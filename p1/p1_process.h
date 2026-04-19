@@ -16,7 +16,5 @@ struct student {
 };
 
 void create_processes_and_sort(std::vector<std::string>, int, int);
-void write_sorted_output(const vector<student> &sorted, const string &output_file_name);
-void write_stats_output(const vector<student> &sorted, const string &output_file_name);
 
 #endif

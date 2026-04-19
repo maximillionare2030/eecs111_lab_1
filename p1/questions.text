@@ -1,0 +1,33 @@
+Question 1 - Shared vs Private variables:
+
+Shared variable: sorted_list (the vector<student> member of ParallelMergeSorter).
+All threads access this same vector since they operate on different index ranges of it.
+Concurrent access does NOT cause a race condition because each thread is assigned a
+non-overlapping slice of sorted_list so no two threads ever read or write the same element
+simultaneously.
+
+Private variable: thread_index (inside MergeSortArgs, passed uniquely to each thread).
+Each thread receives its own MergeSortArgs struct on the heap with its own thread_index,
+so this value is not shared.
+
+Question 2 - Resource waste:
+
+With 5 input files and 7 requested processes, the program creates 5 child processes.
+In create_processes_and_sort (p1_process.cpp), the line 111:
+    if (num_processes > num_files) { num_processes = num_files; }
+caps the process count to the number of files. If all 7 processes were created, the 2 extra
+processes would have no files to process, wasting OS resources (memory, PCB entries, scheduling
+time). Also, a process with an empty file list would still print creation/termination messages
+and call exit(), confusing the output.
+
+
+Question 3 - Data Parallelism and fork:
+
+In my program, input CSV files are read only AFTER the fork, inside process_classes()
+which is called only in the child process. Each child reads only the files assigned to it.
+
+The downside of reading all input files BEFORE forking would be that the parent loads the
+entire dataset into its address space, and fork() copies that entire address space to every
+child. For large files this wastes memory proportional to (num_processes - 1) *
+(data loaded by files not assigned to that child). By reading after the fork, each child only
+loads the data it actually needs, keeping memory usage minimal.

@@ -13,13 +13,10 @@
 
 using namespace std;
 
-
+static void write_sorted_output(const vector<student> &sorted, const string &output_file_name);
+static void write_stats_output(const vector<student> &sorted, const string &output_file_name);
 
 // This file implements the multi-processing logic for the project
-
-
-
-
 // This function should be called in each child process right after forking
 // The input vector should be a subset of the original files vector
 void process_classes(vector<string> classes, int num_threads) {
@@ -59,7 +56,7 @@ void process_classes(vector<string> classes, int num_threads) {
       unsigned long id;
       double grade;
 
-      if (sscanf(line, "%lu, %lf", &id, &grade) == 2) {
+      if (sscanf(line, "%lu,%lf", &id, &grade) == 2) {
         students.push_back(student(id, grade));
       }
     }
@@ -103,10 +100,12 @@ static void write_stats_output(const vector<student> &sorted, const string &outp
 
   if (!sorted.empty()) {
     size_t n = sorted.size();
-    avg = std::accumulate(sorted.begin(), sorted.end(), 0.0,
-                          [](double sum, const student &item) {
-                            return sum + item.grade;
-                          }) / n;
+
+    double total = 0.0;
+    for (size_t j = 0; j < n; j++) {
+      total += sorted[j].grade;
+    }
+    avg = total / n;
 
     if (n % 2 == 0) {
       median = (sorted[n / 2 - 1].grade + sorted[n / 2].grade) / 2.0;
@@ -114,12 +113,12 @@ static void write_stats_output(const vector<student> &sorted, const string &outp
       median = sorted[n / 2].grade;
     }
 
-    std_dev = std::accumulate(sorted.begin(), sorted.end(), 0.0,
-                              [avg](double sum, const student &item) {
-                                double diff = item.grade - avg;
-                                return sum + diff * diff;
-                              });
-    std_dev = sqrt(std_dev / n);
+    double sum_sq = 0.0;
+    for (size_t j = 0; j < n; j++) {
+      double diff = sorted[j].grade - avg;
+      sum_sq += diff * diff;
+    }
+    std_dev = sqrt(sum_sq / n);
   }
 
   FILE *file_stats = fopen(output_file_name.c_str(), "w");

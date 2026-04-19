@@ -39,31 +39,25 @@ ParallelMergeSorter::ParallelMergeSorter(vector<student> &original_list, int num
 
 // This function will be called by each child process to perform multithreaded sorting
 vector<student> ParallelMergeSorter::run_sort() {
-  for (int i = 0; i < num_threads; i++) {
-    // We have to use the heap for this otherwise args will be destructed in each iteration,
-    // and the thread will not have the correct args struct
-    int effective_threads = num_threads;
-    if (effective_threads > (int)sorted_list.size() && (int)sorted_list.size() > 0) {
-      effective_threads = (int)sorted_list.size(); // cap the number of threads to use
-    }
-    if (effective_threads < 1) effective_threads = 1;
-    this->num_threads = effective_threads;
-
-    for (int i = 0; i < effective_threads; i++) {
-      MergeSortArgs * args = new MergeSortArgs(this, i);
-      pthread_t tid;
-      pthread_create(&tid, NULL, ParallelMergeSorter::thread_init, (void *) args); // piid for thread
-      threads.push_back(tid);
-    }
-
-    // join back to main after
-    for (int i = 0; i < (int)threads.size(); i++) {
-      pthread_join(threads[i], NULL);
-    }
+  int effective_threads = num_threads;
+  if (effective_threads > (int)sorted_list.size() && (int)sorted_list.size() > 0) {
+    effective_threads = (int)sorted_list.size();
   }
-  // Merge sorted sublists together
-  this->merge_threads();
+  if (effective_threads < 1) effective_threads = 1;
+  this->num_threads = effective_threads;
 
+  for (int i = 0; i < effective_threads; i++) {
+    MergeSortArgs * args = new MergeSortArgs(this, i);
+    pthread_t tid;
+    pthread_create(&tid, NULL, ParallelMergeSorter::thread_init, (void *) args);
+    threads.push_back(tid);
+  }
+
+  for (int i = 0; i < (int)threads.size(); i++) {
+    pthread_join(threads[i], NULL);
+  }
+
+  this->merge_threads();
   return this->sorted_list;
 }
 
@@ -132,7 +126,8 @@ void * ParallelMergeSorter::thread_init(void * args) {
     upper_bound = (thread_index + 1) * work_per_thread;
   }
 
-  // Free the heap allocation
+  ctx->merge_sort(lower_bound, upper_bound);
+
   delete sort_args;
   return NULL;
 }
