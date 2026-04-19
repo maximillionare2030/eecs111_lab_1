@@ -73,7 +73,7 @@ void ParallelMergeSorter::merge_sort(int lower_bound, int upper_bound) {
   int middle = lower_bound + (upper_bound - lower_bound) / 2;
   merge_sort(lower_bound, middle);
   merge_sort(middle, upper_bound);
-  merge(lower, middle, upper_bound);
+  merge(lower_bound, middle, upper_bound);
 }
 
 
