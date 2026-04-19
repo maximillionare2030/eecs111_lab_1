@@ -68,28 +68,50 @@ vector<student> ParallelMergeSorter::run_sort() {
 }
 
 // Standard merge sort implementation
-void ParallelMergeSorter::merge_sort(int lower, int upper) {
-  // Your implementation goes here, you will need to implement:
-  // Top-down merge sort
+void ParallelMergeSorter::merge_sort(int lower_bound, int upper_bound) {
+  if (upper_bound - lower_bound <= 1) return;
+  int middle = lower_bound + (upper_bound - lower_bound) / 2;
+  merge_sort(lower_bound, middle);
+  merge_sort(middle, upper_bound);
+  merge(lower, middle, upper_bound);
 }
 
-// Standard merge implementation for merge sort
-void ParallelMergeSorter::merge(int lower, int middle, int upper) {
-  // Your implementation goes here, you will need to implement:
-  // Merge for top-down merge sort
-  //  - The merge results should go in temporary list, and once the merge is done, the values
-  //  from the temporary list should be copied back into this->sorted_list
 
+// Standard merge implementation for merge sort
+void ParallelMergeSorter::merge(int lower_bound, int middle, int upper_bound) {
+  vector<student> tmp;
+  int i = lower_bound, j = middle;
+  while (i < middle && j < upper_bound) {
+    if (sorted_list[i].grade >= sorted_list[j].grade) {
+      tmp.push_back(sorted_list[i++]);
+    } else {
+      tmp.push_back(sorted_list[j++]);
+    }
+  }
+  while (i < middle) tmp.push_back(sorted_list[i++]);
+  while (j < upper_bound) tmp.push_back(sorted_list[j++]);
+  for (int k = 0; k < (int)tmp.size(); k++) {
+    sorted_list[lower_bound + k] = tmp[k];
+  }
 }
 
 // This function will be used to merge the resulting sorted sublists together
 void ParallelMergeSorter::merge_threads() {
-  // Your implementation goes here, you will need to implement:
-  // Merging the sorted sublists together
-  //  - Each worker thread only sorts a subset of the entire list, therefore once all
-  //  worker threads are done, we are left with multiple sorted sublists which then need to
-  //  be merged once again to result in one total sorted list
+  if (num_threads <= 1) return;
 
+  int work_per_thread = (int)sorted_list.size() / num_threads;
+  int merged_upper = work_per_thread;
+
+  for (int i = 1; i < num_threads; i++) {
+    int next_upper;
+    if (i == num_threads - 1) {
+      next_upper = (int)sorted_list.size();
+    } else {
+      next_upper = (i + 1) * work_per_thread;
+    }
+    merge(0, merged_upper, next_upper);
+    merged_upper = next_upper;
+  }
 }
 
 // This function is the start routine for the created threads, it should perform merge sort on its assigned sublist
@@ -104,7 +126,11 @@ void * ParallelMergeSorter::thread_init(void * args) {
   int lower_bound = thread_index * work_per_thread;
   int upper_bound;
 
-  if (thread_index == ctx->num_threads);
+  if (thread_index == ctx->num_threads - 1) {
+    upper_bound = n;
+  } else {
+    upper_bound = (thread_index + 1) * work_per_thread;
+  }
 
   // Free the heap allocation
   delete sort_args;
